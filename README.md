@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Game Team Analyzer
 
-## Getting Started
+AI-powered League of Legends team coach — synergy scoring, duo/team recommendations, and win/loss reasoning grounded in real match data.
 
-First, run the development server:
+## Stack
+
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · shadcn/ui · Framer Motion · Prisma/PostgreSQL · Upstash Redis · Zod · TanStack Query · Recharts · Vercel AI SDK (OpenAI)
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env   # fill in DATABASE_URL, RIOT_API_KEY, UPSTASH_*, OPENAI_API_KEY
+npm run prisma:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  app/(marketing)        public landing pages
+  app/(dashboard)         authenticated app shell: summoner, teams, matches
+  app/api                 route handlers: riot proxy, ai coaching, auth
+  server/services         business logic, orchestrates repositories + external APIs
+  server/repositories      Prisma queries only
+  server/riot              Riot API client, rate limiter, region routing
+  server/ai                 prompt templates, AI SDK calls
+  lib                       framework-agnostic utilities
+  hooks                     TanStack Query hooks
+  components/ui             shadcn primitives
+  components/charts         Recharts wrappers
+  components/features       feature-specific composed components
+  validation                Zod schemas
+  types                     shared TypeScript types
+prisma/schema.prisma
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Route Handlers/Server Actions → `services/` → `repositories/` + `riot/` + `ai/` + Redis. Client components never touch Prisma/Redis/Riot directly.
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` / `build` / `start`
+- `npm run lint`
+- `npm run prisma:generate` / `prisma:migrate` / `prisma:studio`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Scaffolded per the architecture in `.claude/agents/agent.md`: schema, layered services, cached Riot proxy, AI-SDK-backed team synergy analysis, and the marketing/dashboard shell are in place. Riot/OpenAI/Upstash credentials still need to be provisioned before live data flows.

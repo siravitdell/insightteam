@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  summoners Summoner[]
+
+  @@map("users")
+}
+
+model Summoner {
+  id            String   @id @default(cuid())
+  puuid         String   @unique
+  region        String
+  gameName      String   @map("game_name")
+  tagLine       String   @map("tag_line")
+  summonerLevel Int      @map("summoner_level")
+  profileIconId Int      @map("profile_icon_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  participants  Participant[]
+  teamAnalyses  TeamAnalysis[]
+
+  @@index([userId])
+  @@index([region, gameName, tagLine])
+  @@map("summoners")
+}
+
+model Match {
+  id            String   @id @default(cuid())
+  matchId       String   @unique @map("match_id")
+  region        String
+  queueId       Int      @map("queue_id")
+  gameCreation  DateTime @map("game_creation")
+  gameDuration  Int      @map("game_duration")
+  gameVersion   String   @map("game_version")
+  rawPayload    Json     @map("raw_payload")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  participants Participant[]
+
+  @@index([region, gameCreation])
+  @@map("matches")
+}
+
+model Participant {
+  id            String  @id @default(cuid())
+  puuid         String
+  summonerId    String? @map("summoner_id")
+  championId    Int     @map("champion_id")
+  championName  String  @map("champion_name")
+  teamId        Int     @map("team_id")
+  win           Boolean
+  kills         Int
+  deaths        Int
+  assists       Int
+  cs            Int
+  goldEarned    Int     @map("gold_earned")
+  damageDealt   Int     @map("damage_dealt")
+  visionScore   Int     @map("vision_score")
+  role          String
+  lane          String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  matchId  String   @map("match_id")
+  match    Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  summoner Summoner? @relation(fields: [summonerId], references: [id])
+
+  @@index([matchId])
+  @@index([summonerId])
+  @@index([puuid])
+  @@map("participants")
+}
+
+model ChampionStat {
+  id           String   @id @default(cuid())
+  puuid        String
+  championId   Int      @map("champion_id")
+  championName String   @map("champion_name")
+  games        Int      @default(0)
+  wins         Int      @default(0)
+  losses       Int      @default(0)
+  avgKda       Float    @map("avg_kda")
+  avgCs        Float    @map("avg_cs")
+  avgVision    Float    @map("avg_vision")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([puuid, championId])
+  @@index([puuid])
+  @@map("champion_stats")
+}
+
+model TeamAnalysis {
+  id           String   @id @default(cuid())
+  rosterHash   String   @unique @map("roster_hash")
+  summary      String
+  strengths    Json
+  weaknesses   Json
+  synergyScore Float    @map("synergy_score")
+  recommendations Json
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  summonerId String?   @map("summoner_id")
+  summoner   Summoner? @relation(fields: [summonerId], references: [id])
+
+  @@index([summonerId])
+  @@map("team_analyses")
+}
