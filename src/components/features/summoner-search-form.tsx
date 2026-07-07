@@ -29,7 +29,7 @@ const REGION_LABELS: Record<string, string> = {
 
 export function SummonerSearchForm() {
   const router = useRouter();
-  const [region, setRegion] = useState<string>("na1");
+  const [region, setRegion] = useState<string>("sg2");
   const [riotId, setRiotId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
