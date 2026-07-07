@@ -4,6 +4,7 @@ export const matchSummarySchema = z.object({
   matchId: z.string(),
   gameCreation: z.number(),
   gameDuration: z.number(),
+  gameVersion: z.string(),
   championName: z.string(),
   win: z.boolean(),
   kills: z.number(),
