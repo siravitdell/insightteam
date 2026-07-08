@@ -1,5 +1,5 @@
 import type { RiotRegion } from "@/lib/constants";
-import { RiotApiError, SummonerNotFoundError } from "@/lib/errors";
+import { RiotApiError } from "@/lib/errors";
 import { platformHost, routingHost, matchRoutingHost } from "./region";
 import { withRiotRateLimit } from "./rate-limiter";
 
@@ -11,9 +11,6 @@ async function riotFetch<T>(url: string, methodKey: string): Promise<T> {
       headers: { "X-Riot-Token": RIOT_API_KEY },
     });
 
-    if (res.status === 404) {
-      throw new SummonerNotFoundError("unknown", "unknown");
-    }
     if (!res.ok) {
       throw new RiotApiError(`Riot API request failed: ${res.statusText}`, res.status);
     }

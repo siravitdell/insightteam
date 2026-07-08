@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-const NAV_LINKS = [{ href: "/matches", label: "Matches" }];
+const NAV_LINKS = [
+  { href: "/teams", label: "Teams" },
+  { href: "/matches", label: "Matches" },
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

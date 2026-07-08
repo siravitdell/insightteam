@@ -1,56 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TeamAnalysisCard } from "@/components/features/team-analysis-card";
-import { useTeamAnalysis } from "@/hooks/useTeamAnalysis";
+import { useMemo, useState } from "react";
+import { TeamRosterForm } from "@/components/features/team-roster-form";
+import { TeamRosterCard } from "@/components/features/team-roster-card";
+import { TeamSynergySummary } from "@/components/features/team-synergy-summary";
+import { useTeamRoster } from "@/hooks/useTeamRoster";
+import { computeTeamSynergy } from "@/lib/team-synergy";
+import type { RiotRegion } from "@/lib/constants";
 
 export default function TeamsPage() {
-  const [puuidsInput, setPuuidsInput] = useState("");
-  const teamAnalysis = useTeamAnalysis();
-
-  function handleAnalyze() {
-    const puuids = puuidsInput
-      .split(",")
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    if (puuids.length === 0) return;
-
-    teamAnalysis.mutate({ puuids, region: "na1" });
-  }
+  const [query, setQuery] = useState<{ region: RiotRegion; riotIds: string[] } | null>(null);
+  const roster = useTeamRoster(query?.region ?? "sg2", query?.riotIds ?? []);
+  const synergy = useMemo(() => computeTeamSynergy(roster), [roster]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Team synergy analysis</h1>
+        <h1 className="text-2xl font-semibold">Analyze team</h1>
         <p className="text-sm text-muted-foreground">
-          Paste up to five summoner PUUIDs to get an AI coaching breakdown of your team.
+          Add 2 to 5 Riot IDs to see each player&apos;s profile, recent match history, and how
+          often they win when playing together.
         </p>
       </div>
 
-      <div className="flex max-w-xl gap-2">
-        <Input
-          value={puuidsInput}
-          onChange={(e) => setPuuidsInput(e.target.value)}
-          placeholder="puuid1, puuid2, puuid3..."
-        />
-        <Button onClick={handleAnalyze} disabled={teamAnalysis.isPending}>
-          {teamAnalysis.isPending ? "Analyzing..." : "Analyze"}
-        </Button>
-      </div>
+      <TeamRosterForm onSubmit={(region, riotIds) => setQuery({ region, riotIds })} />
 
-      {teamAnalysis.isPending && <Skeleton className="h-64 w-full max-w-xl" />}
-      {teamAnalysis.isError && (
-        <p className="text-sm text-destructive">
-          {teamAnalysis.error instanceof Error ? teamAnalysis.error.message : "Analysis failed"}
-        </p>
-      )}
-      {teamAnalysis.data && (
-        <div className="max-w-xl">
-          <TeamAnalysisCard analysis={teamAnalysis.data} />
+      {query && (
+        <div className="max-w-xl space-y-4">
+          <TeamSynergySummary synergy={synergy} />
+          {roster.map((entry) => (
+            <TeamRosterCard key={entry.riotId} entry={entry} />
+          ))}
         </div>
       )}
     </div>

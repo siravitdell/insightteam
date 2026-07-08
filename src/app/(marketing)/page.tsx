@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SummonerSearchForm } from "@/components/features/summoner-search-form";
 
@@ -28,6 +30,9 @@ export default function MarketingHomePage() {
           and who you should be playing with.
         </p>
         <SummonerSearchForm />
+        <Button render={<Link href="/teams" />} nativeButton={false} variant="outline">
+          Analyze a team instead
+        </Button>
       </section>
 
       <section className="mx-auto grid max-w-5xl gap-6 px-6 pb-24 sm:grid-cols-3">
