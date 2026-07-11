@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -79,53 +80,75 @@ export function TeamRosterForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-3">
-      <Select value={region} onValueChange={(value) => value && setRegion(value)}>
-        <SelectTrigger className="w-44">
-          <SelectValue placeholder="Region" />
-        </SelectTrigger>
-        <SelectContent>
-          {RIOT_REGIONS.map((r) => (
-            <SelectItem key={r} value={r}>
-              {REGION_LABELS[r] ?? r.toUpperCase()}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <Card className="max-w-2xl">
+      <CardContent className="p-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Region
+            </label>
+            <Select value={region} onValueChange={(value) => value && setRegion(value)}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Region" />
+              </SelectTrigger>
+              <SelectContent>
+                {RIOT_REGIONS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {REGION_LABELS[r] ?? r.toUpperCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <div className="space-y-2">
-        {riotIds.map((riotId, index) => (
-          <div key={index} className="flex gap-2">
-            <Input
-              value={riotId}
-              onChange={(e) => updateRiotId(index, e.target.value)}
-              placeholder={`Player ${index + 1}: gameName#tagLine`}
-              className="flex-1"
-            />
-            {riotIds.length > MIN_PLAYERS && (
-              <Button type="button" variant="ghost" size="icon" onClick={() => removePlayer(index)}>
-                ×
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Players ({riotIds.length}/{MAX_PLAYERS})
+            </label>
+            <div className="space-y-2">
+              {riotIds.map((riotId, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={riotId}
+                    onChange={(e) => updateRiotId(index, e.target.value)}
+                    placeholder={`Player ${index + 1}: gameName#tagLine`}
+                    className="flex-1"
+                  />
+                  {riotIds.length > MIN_PLAYERS && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removePlayer(index)}
+                      aria-label={`Remove player ${index + 1}`}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {riotIds.length < MAX_PLAYERS && (
+              <Button type="button" variant="outline" size="sm" onClick={addPlayer}>
+                + Add player
               </Button>
             )}
+            {riotIds.length < MAX_PLAYERS && (
+              <Button type="button" variant="outline" size="sm" onClick={useFullTeam}>
+                Full team (5)
+              </Button>
+            )}
+            <Button type="submit" className="ml-auto">
+              Analyze team
+            </Button>
           </div>
-        ))}
-      </div>
 
-      <div className="flex items-center gap-2">
-        {riotIds.length < MAX_PLAYERS && (
-          <Button type="button" variant="outline" size="sm" onClick={addPlayer}>
-            + Add player
-          </Button>
-        )}
-        {riotIds.length < MAX_PLAYERS && (
-          <Button type="button" variant="outline" size="sm" onClick={useFullTeam}>
-            Full team (5)
-          </Button>
-        )}
-        <Button type="submit">Analyze team</Button>
-      </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-    </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </form>
+      </CardContent>
+    </Card>
   );
 }

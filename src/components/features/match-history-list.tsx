@@ -1,50 +1,54 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { championIconUrl } from "@/lib/ddragon";
+import { cn } from "@/lib/utils";
 import { formatDuration, formatKda, timeAgo } from "@/lib/format";
 import type { MatchSummary } from "@/validation/match-summary";
 
 export function MatchHistoryList({ matches }: { matches: MatchSummary[] }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {matches.map((match) => (
-        <Card key={match.matchId} className="py-3">
-          <CardContent className="flex items-center justify-between gap-4 px-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 rounded-md">
-                <AvatarImage
-                  src={championIconUrl(match.championName, match.gameVersion)}
-                  alt={match.championName}
-                />
-                <AvatarFallback className="rounded-md">
-                  {match.championName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <Badge variant={match.win ? "default" : "destructive"}>
-                {match.win ? "Win" : "Loss"}
-              </Badge>
-              <div>
-                <p className="text-sm font-medium">{match.championName}</p>
-                <p className="text-xs text-muted-foreground">{match.role || "Unknown role"}</p>
-              </div>
-            </div>
+        <div
+          key={match.matchId}
+          className={cn(
+            "grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-lg border-l-4 bg-muted/40 px-3 py-2",
+            match.win ? "border-l-emerald-500" : "border-l-destructive"
+          )}
+        >
+          <Avatar className="h-9 w-9 rounded-md">
+            <AvatarImage
+              src={championIconUrl(match.championName, match.gameVersion)}
+              alt={match.championName}
+            />
+            <AvatarFallback className="rounded-md text-xs">
+              {match.championName.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
-            <div className="text-right">
-              <p className="text-sm font-medium">
-                {formatKda(match.kills, match.deaths, match.assists)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {match.kills}/{match.deaths}/{match.assists} · {match.cs} CS
-              </p>
-            </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{match.championName}</p>
+            <p className="truncate text-xs text-muted-foreground">{match.role || "Unknown role"}</p>
+          </div>
 
-            <div className="text-right text-xs text-muted-foreground">
-              <p>{formatDuration(match.gameDuration)}</p>
-              <p>{timeAgo(new Date(match.gameCreation))}</p>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="text-right">
+            <p className="text-sm font-medium tabular-nums">
+              {match.kills}/{match.deaths}/{match.assists}
+            </p>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {formatKda(match.kills, match.deaths, match.assists)} · {match.cs} CS
+            </p>
+          </div>
+
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant={match.win ? "default" : "destructive"} className="px-1.5 py-0 text-[0.65rem]">
+              {match.win ? "Win" : "Loss"}
+            </Badge>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {formatDuration(match.gameDuration)} · {timeAgo(new Date(match.gameCreation))}
+            </p>
+          </div>
+        </div>
       ))}
     </div>
   );

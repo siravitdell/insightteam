@@ -4,18 +4,33 @@ import { platformHost, routingHost, matchRoutingHost } from "./region";
 import { withRiotRateLimit } from "./rate-limiter";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY ?? "";
+const MAX_RETRIES = 3;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function riotFetch<T>(url: string, methodKey: string): Promise<T> {
   return withRiotRateLimit(methodKey, async () => {
-    const res = await fetch(url, {
-      headers: { "X-Riot-Token": RIOT_API_KEY },
-    });
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const res = await fetch(url, {
+        headers: { "X-Riot-Token": RIOT_API_KEY },
+      });
 
-    if (!res.ok) {
-      throw new RiotApiError(`Riot API request failed: ${res.statusText}`, res.status);
+      if (res.status === 429 && attempt < MAX_RETRIES) {
+        const retryAfterSeconds = Number(res.headers.get("Retry-After")) || 1;
+        await sleep(retryAfterSeconds * 1000);
+        continue;
+      }
+
+      if (!res.ok) {
+        throw new RiotApiError(`Riot API request failed: ${res.statusText}`, res.status);
+      }
+
+      return (await res.json()) as T;
     }
 
-    return (await res.json()) as T;
+    throw new RiotApiError("Riot API rate limit exceeded after retries", 429);
   });
 }
 

@@ -14,6 +14,15 @@ export function formatWinRate(wins: number, games: number): string {
   return `${Math.round((wins / games) * 100)}%`;
 }
 
+export function winRateColorClass(wins: number, games: number): string {
+  if (games === 0) return "text-muted-foreground";
+  const rate = wins / games;
+  if (rate >= 0.6) return "text-emerald-500";
+  if (rate >= 0.5) return "text-emerald-600 dark:text-emerald-400";
+  if (rate >= 0.4) return "text-amber-600 dark:text-amber-400";
+  return "text-destructive";
+}
+
 export function timeAgo(date: Date): string {
   const diffMs = Date.now() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);

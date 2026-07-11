@@ -1,4 +1,5 @@
 import type { TeamRosterEntry } from "@/hooks/useTeamRoster";
+import type { MatchSummary } from "@/validation/match-summary";
 
 export interface PlayerStat {
   riotId: string;
@@ -7,87 +8,90 @@ export interface PlayerStat {
 }
 
 export interface ChampionComboStat {
-  championA: string;
-  championB: string;
+  champions: string[];
   games: number;
   wins: number;
 }
 
-export interface DuoStat {
-  playerA: string;
-  playerB: string;
-  gamesTogether: number;
-  winsTogether: number;
-  combos: ChampionComboStat[];
-}
-
 export interface TeamSynergy {
   players: PlayerStat[];
-  duos: DuoStat[];
+  sharedGames: number;
+  sharedWins: number;
+  combos: ChampionComboStat[];
 }
 
 function loadedEntries(roster: TeamRosterEntry[]) {
   return roster.filter((entry) => entry.summoner && entry.matches);
 }
 
+/**
+ * Finds matches where every player in the roster appears together on the
+ * same team (same win outcome). Only these shared matches feed the stats
+ * below, since the goal is "how does this exact group perform together",
+ * not each player's unrelated solo win rate.
+ */
+function findSharedMatches(entries: TeamRosterEntry[]): MatchSummary[][] {
+  if (entries.length < 2) return [];
+
+  const [first, ...rest] = entries;
+  const restMaps = rest.map((entry) => new Map(entry.matches!.map((m) => [m.matchId, m])));
+
+  const shared: MatchSummary[][] = [];
+
+  for (const matchA of first.matches!) {
+    const row: MatchSummary[] = [matchA];
+    let allPresent = true;
+
+    for (const map of restMaps) {
+      const match = map.get(matchA.matchId);
+      if (!match || match.win !== matchA.win) {
+        allPresent = false;
+        break;
+      }
+      row.push(match);
+    }
+
+    if (allPresent) shared.push(row);
+  }
+
+  return shared;
+}
+
 export function computeTeamSynergy(roster: TeamRosterEntry[]): TeamSynergy {
   const entries = loadedEntries(roster);
 
+  if (entries.length < 2) {
+    return { players: entries.map((e) => ({ riotId: e.riotId, games: 0, wins: 0 })), sharedGames: 0, sharedWins: 0, combos: [] };
+  }
+
+  const shared = findSharedMatches(entries);
+  const sharedGames = shared.length;
+  const sharedWins = shared.filter((row) => row[0].win).length;
+
   const players: PlayerStat[] = entries.map((entry) => ({
     riotId: entry.riotId,
-    games: entry.matches!.length,
-    wins: entry.matches!.filter((m) => m.win).length,
+    games: sharedGames,
+    wins: sharedWins,
   }));
 
-  const duos: DuoStat[] = [];
-
-  for (let i = 0; i < entries.length; i++) {
-    for (let j = i + 1; j < entries.length; j++) {
-      const a = entries[i];
-      const b = entries[j];
-      const bMatchesById = new Map(b.matches!.map((m) => [m.matchId, m]));
-
-      let gamesTogether = 0;
-      let winsTogether = 0;
-      const comboMap = new Map<string, ChampionComboStat>();
-
-      for (const matchA of a.matches!) {
-        const matchB = bMatchesById.get(matchA.matchId);
-        if (!matchB) continue;
-        // Same win outcome means they were on the same team; opposite means they faced each other.
-        if (matchA.win !== matchB.win) continue;
-
-        gamesTogether += 1;
-        if (matchA.win) winsTogether += 1;
-
-        const comboKey = `${matchA.championName}|${matchB.championName}`;
-        const existing = comboMap.get(comboKey);
-        if (existing) {
-          existing.games += 1;
-          if (matchA.win) existing.wins += 1;
-        } else {
-          comboMap.set(comboKey, {
-            championA: matchA.championName,
-            championB: matchB.championName,
-            games: 1,
-            wins: matchA.win ? 1 : 0,
-          });
-        }
-      }
-
-      if (gamesTogether > 0) {
-        const combos = Array.from(comboMap.values()).sort((x, y) => {
-          const winRateDiff = y.wins / y.games - x.wins / x.games;
-          if (winRateDiff !== 0) return winRateDiff;
-          return y.games - x.games;
-        });
-
-        duos.push({ playerA: a.riotId, playerB: b.riotId, gamesTogether, winsTogether, combos });
-      }
+  const comboMap = new Map<string, ChampionComboStat>();
+  for (const row of shared) {
+    const champions = row.map((m) => m.championName);
+    const key = champions.join("|");
+    const existing = comboMap.get(key);
+    if (existing) {
+      existing.games += 1;
+      if (row[0].win) existing.wins += 1;
+    } else {
+      comboMap.set(key, { champions, games: 1, wins: row[0].win ? 1 : 0 });
     }
   }
 
-  duos.sort((x, y) => y.gamesTogether - x.gamesTogether);
+  const combos = Array.from(comboMap.values()).sort((x, y) => {
+    const winRateDiff = y.wins / y.games - x.wins / x.games;
+    if (winRateDiff !== 0) return winRateDiff;
+    return y.games - x.games;
+  });
 
-  return { players, duos };
+  return { players, sharedGames, sharedWins, combos };
 }
